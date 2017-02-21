@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<script src="ajax.js"></script>
+		<script src="jquery.min.js"></script>
+		<style type="text/css">
+		table{
+			width: 1000px;
+			height: auto;
+			overflow: hidden;
+			border-collapse: collapse;
+			margin:0 auto;
+		}
+		td,th{
+			width: 25%;
+			height: 30px;
+			line-height: 30px;
+			text-align: center;
+			border: 1px solid black;
+		}
+		.add{
+			width:100px;
+			height: 30px;
+			background: pink;
+			line-height: 30px;
+			text-align: center;
+			margin:0 auto;
+			margin-top:10px;
+			cursor: pointer;
+			text-decoration: none;
+		}
+		.wait{
+	        width: 5px;
+	        height: 15px;
+	        background: #000;
+	        position: fixed;
+	        left: 0;
+	        right: 0;
+	        top:0;
+	        bottom:0;
+	        animation: wait 1s ease infinite alternate;
+	        margin: auto;
+   		}
+	    .wait:before{
+	        width: 5px;
+	        height: 15px;
+	        background: #000;
+	        position: absolute;
+	        top:0;
+	        left:10px;
+	        display: block;
+	        animation-delay: -1s; /*延迟时间*/
+	        content: "";/*撑开容器*/
+	    }
+	    .wait:after{
+	        width: 5px;
+	        height: 15px;
+	        background: #000;
+	        position: absolute;
+	        top:0;
+	        left:20px;
+	        display: block;
+	        content: "";
+	    }
+		@keyframes wait {/*动画，关键帧  加动画的名称*/
+	        0%{
+	            transform: scale(1);/*缩放函数*/
+	        }
+	        100%{
+	            transform: scale(2,2);
+	        }
+    	}
+	    input{
+	        width: 80px;
+	    }
+	    .del{
+	        color: #FF0000;
+	        cursor: pointer;
+	    }
+	</style>
+	</head>
+	<body>
+	<table>
+		<thead>
+			<tr>
+				<th>姓名</th>
+				<th>性别</th>
+				<th>年龄</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>		
+		</tbody>
+	</table>
+	<div class="add">+</div>
+	<div class="wait"></div>
+	</body>
+	<script>
+		var tbody=document.querySelector("tbody");
+		ajax({
+			url:"select.php",
+			dataType:"json",
+			success:function(e){
+				var str="";
+				for(var i=0;i<e.length;i++){
+					str+="<tr id="+e[i].id+">";
+					str+="<td attr='name'>"+e[i].name+"</td>";
+					str+="<td attr='sex'>"+e[i].sex+"</td>";
+					str+="<td attr='age'>"+e[i].age+"</td>";
+					str+="<td><div class='del'>删除</a>";
+					str+="</tr>";
+				}
+				tbody.innerHTML=str;
+			}
+		})
+		var add=document.getElementsByClassName("add")[0];
+		var wait=document.getElementsByClassName("wait")[0];
+		add.onclick=function(){
+			wait.style.display="block";
+            ajax({
+                url:"add.php",
+                success:function (e) {
+                    wait.style.display="none";
+                    //创建tr标签，td加入到tr中，id名  最后加入到页面中
+                    var tr=document.createElement("tr");
+                    var str="";
+                    str+="<td attr='name'></td>";
+                    str+="<td attr='age'></td>";
+                    str+="<td attr='sex'></td>";
+                    str+="<td><div class='del'>删除</div></td>";
+                    tr.setAttribute("id",e)
+                    tr.innerHTML=str;
+                    tbody.appendChild(tr);
+                }
+            })
+		}
+			tbody.onclick=function (e) {
+            //因为添加的元素也要删除，所以用事件委派
+            // 删除要用到 删除它tr的id
+            wait.style.display="none";
+            var ev = e.target || ev.srcElement;
+            if (ev.className == "del") {
+                var parent = ev.parentNode.parentNode;
+                var id = parent.id;
+                wait.style.display="block";
+                ajax({
+                    url: "del.php",
+                    data:{id:id},
+                    success: function (e) {
+                        wait.style.display = "none";
+                        tbody.removeChild(parent);
+                    }
+                })
+            }
+        }
+
+	
+	$("tbody").delegate("td:not(.del)","dblclick",function(){
+		var that=$(this);
+		var oldv=$(this).html();
+		$(this).html("");
+		var input=$("<input>").val(oldv).appendTo(this);
+		input.focus();
+		input.blur(function(){
+			var id=that.parent().attr("id");
+			var attr=that.attr("attr");
+			var newv=$(this).val();
+			if(newv==oldv){
+				this.remove();
+				that.html(newv);
+			}else{
+				$.ajax({
+					url:"insert.php",
+					data:{id:id,attr:attr,value:newv},
+					success:function(e){
+						if(e=="ok"){
+							input.remove();
+							that.html(newv);
+						}
+					}
+				})
+			}
+		})
+	})
+
+	</script>
+</html>
